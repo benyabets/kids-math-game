@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אתגר החשבון הגדול - גילוי ממתק מסתורי</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- HTML2Canvas for Screenshots -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&display=swap');
+        
+        body {
+            font-family: 'Rubik', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+            user-select: none;
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Tabs styling */
+        .mode-tab {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .mode-tab.active {
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+            font-weight: bold;
+        }
+        .mode-tab:not(.active):hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Cells styling */
+        .grid-cell {
+            transition: all 0.2s ease;
+        }
+
+        .cell-filled {
+            background: rgba(16, 185, 129, 0.25) !important;
+            color: #ffffff;
+            font-weight: 800;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.9);
+            box-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.5);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(0px) !important;
+        }
+
+        .cell-empty {
+            background: #1e293b !important;
+            border: 1px dashed rgba(255, 255, 255, 0.18);
+        }
+
+        .cell-target {
+            animation: pulseTarget 1.5s infinite alternate;
+            border: 2px solid #f59e0b !important;
+            background: #d97706 !important;
+            color: #ffffff !important;
+        }
+
+        @keyframes pulseTarget {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.8); }
+            100% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            80% { transform: scale(1.15); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.5); border-radius: 4px; }
+    </style>
+</head>
+<body class="p-2 sm:p-4 md:p-6 flex flex-col min-h-screen justify-between">
+
+    <header class="max-w-6xl mx-auto w-full mb-4">
+        
+        <!-- Mode Selector Tabs -->
+        <div class="flex flex-wrap justify-center gap-2 mb-3 bg-slate-900/50 p-1.5 rounded-2xl border border-slate-700/50 backdrop-blur-sm">
+            <button onclick="switchMode('mult')" id="tab-mult" class="mode-tab active px-4 py-2 rounded-xl border border-slate-600 text-slate-300 text-sm sm:text-base flex items-center gap-2">
+                <i class="fa-solid fa-xmark text-amber-400"></i> כפל
+            </button>
+            <button onclick="switchMode('add')" id="tab-add" class="mode-tab px-4 py-2 rounded-xl border border-slate-600 text-slate-300 text-sm sm:text-base flex items-center gap-2">
+                <i class="fa-solid fa-plus text-emerald-400"></i> חיבור
+            </button>
+            <button onclick="switchMode('sub')" id="tab-sub" class="mode-tab px-4 py-2 rounded-xl border border-slate-600 text-slate-300 text-sm sm:text-base flex items-center gap-2">
+                <i class="fa-solid fa-minus text-rose-400"></i> חיסור
+            </button>
+            <button onclick="switchMode('div')" id="tab-div" class="mode-tab px-4 py-2 rounded-xl border border-slate-600 text-slate-300 text-sm sm:text-base flex items-center gap-2">
+                <i class="fa-solid fa-divide text-sky-400"></i> חילוק
+            </button>
+            <button onclick="switchMode('mixed')" id="tab-mixed" class="mode-tab px-4 py-2 rounded-xl border border-slate-600 text-slate-300 text-sm sm:text-base flex items-center gap-2">
+                <i class="fa-solid fa-dice text-purple-400"></i> מעורב
+            </button>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 flex flex-wrap justify-between items-center gap-4 shadow-xl border border-indigo-500/20">
+            <div class="flex items-center gap-3">
+                <div id="header-icon-container" class="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-2xl text-white shadow-lg shadow-indigo-500/30">
+                    <i id="header-icon" class="fa-solid fa-xmark"></i>
+                </div>
+                <div>
+                    <h1 id="header-title" class="text-xl sm:text-2xl font-black bg-gradient-to-r from-amber-300 via-indigo-200 to-emerald-300 bg-clip-text text-transparent">
+                        לוח הכפל
+                    </h1>
+                    <p class="text-xs text-slate-400">ענו נכונה וגלו איזה ממתק מסתתר!</p>
+                </div>
+            </div>
+
+            <!-- Score Stats Bar -->
+            <div class="flex items-center gap-3 sm:gap-6 bg-slate-900/80 py-2 px-4 rounded-xl border border-slate-700/50 text-xs sm:text-sm">
+                <div class="text-center">
+                    <div class="text-slate-400 text-[10px] sm:text-xs">התקדמות</div>
+                    <div class="font-bold text-amber-400 text-sm sm:text-base" id="stat-progress">0 / 100</div>
+                </div>
+                <div class="h-8 w-px bg-slate-700"></div>
+                <div class="text-center">
+                    <div class="text-slate-400 text-[10px] sm:text-xs">רצף תשובות</div>
+                    <div class="font-bold text-emerald-400 text-sm sm:text-base flex items-center justify-center gap-1">
+                        <span id="stat-streak">0</span> <i class="fa-solid fa-fire text-amber-500 text-xs"></i>
+                    </div>
+                </div>
+                <div class="h-8 w-px bg-slate-700"></div>
+                <div class="text-center">
+                    <div class="text-slate-400 text-[10px] sm:text-xs">זמן</div>
+                    <div class="font-bold text-indigo-300 text-sm sm:text-base font-mono" id="stat-timer">00:00</div>
+                </div>
+                <div class="h-8 w-px bg-slate-700"></div>
+                <div class="text-center">
+                    <div class="text-slate-400 text-[10px] sm:text-xs">ניקוד</div>
+                    <div class="font-bold text-purple-300 text-sm sm:text-base" id="stat-score">0</div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-2">
+                <button onclick="toggleSound()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="צלילים">
+                    <i class="fa-solid fa-volume-high text-lg" id="icon-sound"></i>
+                </button>
+                <button onclick="openSettingsModal()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="הגדרות">
+                    <i class="fa-solid fa-gear text-lg"></i>
+                </button>
+                <button onclick="confirmRestart()" class="p-2.5 rounded-xl bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 transition" title="התחל מחדש לוח זה">
+                    <i class="fa-solid fa-rotate-right text-lg"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full bg-slate-800/80 rounded-full h-2.5 mt-2 overflow-hidden border border-slate-700/50 p-0.5">
+            <div id="progress-bar-inner" class="bg-gradient-to-r from-amber-400 via-indigo-500 to-emerald-400 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- LEFT/CENTER: The Puzzle Grid -->
+        <section class="lg:col-span-7 xl:col-span-8 order-2 lg:order-1 glass-card p-3 sm:p-5 rounded-2xl shadow-xl flex flex-col items-center">
+            
+            <div class="flex flex-wrap justify-between items-center w-full mb-3 px-1 gap-2">
+                <h2 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
+                    <i class="fa-solid fa-gift text-amber-400 text-base animate-bounce"></i>
+                    <span>פרס מסתורי: <span id="candy-title-display" class="text-amber-300 font-bold">❓❓❓ (ממתק סודי!)</span></span>
+                </h2>
+                <div class="text-xs bg-amber-500/20 text-amber-300 px-3 py-1 rounded-full border border-amber-500/30 font-medium">
+                    <i class="fa-solid fa-eye ml-1"></i> נחשף: <span id="reveal-pct-display">0%</span>
+                </div>
+            </div>
+
+            <!-- Table Wrapper -->
+            <div class="w-full overflow-x-auto p-1 flex justify-center">
+                <div id="grid-container-relative" class="relative rounded-2xl overflow-hidden p-2 bg-slate-900 border border-indigo-500/30">
+                    <!-- Underlay Secret Candy Image -->
+                    <div id="secret-candy-bg" class="absolute inset-0 bg-cover bg-center transition-all duration-500 opacity-95"></div>
+                    
+                    <!-- Grid Layer -->
+                    <div id="math-grid" class="relative z-10 grid gap-1 sm:gap-1.5 auto-cols-max">
+                        <!-- Dynamic Grid generated via JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT: Active Question & Inputs -->
+        <section class="lg:col-span-5 xl:col-span-4 order-1 lg:order-2 flex flex-col gap-4">
+            
+            <!-- Question Box -->
+            <div class="glass-card p-5 sm:p-6 rounded-2xl shadow-xl text-center relative overflow-hidden border-2 border-indigo-500/30">
+                <div class="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" id="q-border-top"></div>
+
+                <div class="text-xs font-medium text-indigo-300 uppercase tracking-wider mb-2" id="question-subtitle">
+                    שאלה אקראית מתוך הלוח
+                </div>
+
+                <!-- Equation Display (Enforced LTR math format) -->
+                <div dir="ltr" style="direction: ltr;" class="my-4 flex flex-row items-center justify-center gap-3 text-3xl sm:text-5xl font-black tracking-tight" id="equation-container">
+                    <span id="num1" class="text-amber-400 drop-shadow">?</span>
+                    <span id="operator-display" class="text-indigo-400"></span>
+                    <span id="num2" class="text-emerald-400 drop-shadow">?</span>
+                    <span class="text-slate-400">=</span>
+                    <div class="inline-flex items-center justify-center min-w-[65px] min-h-[55px] px-3 py-1 bg-slate-900/90 rounded-2xl border-2 border-indigo-500/50 text-white font-mono shadow-inner text-3xl sm:text-4xl text-center" id="answer-display">
+                        ?
+                    </div>
+                </div>
+
+                <!-- Mode Selector Toggle -->
+                <div class="flex justify-center gap-2 my-2 text-xs">
+                    <button id="mode-keypad-btn" onclick="setAnswerMode('keypad')" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-medium shadow transition">
+                        <i class="fa-solid fa-keyboard ml-1"></i> מקלדת
+                    </button>
+                    <button id="mode-mc-btn" onclick="setAnswerMode('mc')" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white font-medium transition">
+                        <i class="fa-solid fa-list-check ml-1"></i> 4 אפשרויות
+                    </button>
+                </div>
+
+                <!-- Feedback Message -->
+                <div id="feedback-msg" class="h-6 text-sm font-bold transition-all duration-200 mt-2"></div>
+            </div>
+
+            <!-- KEYPAD CONTAINER -->
+            <div id="keypad-container" class="glass-card p-4 rounded-2xl shadow-xl flex flex-col gap-2">
+                <div class="grid grid-cols-3 gap-2" dir="ltr">
+                    <!-- Numbers -->
+                    <button onclick="pressDigit(1)" class="py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">1</button>
+                    <button onclick="pressDigit(2)" class="py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">2</button>
+                    <button onclick="pressDigit(3)" class="py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">3</button>
+                    <button onclick="pressDigit(4)" class="py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">4</button>
+                    <button onclick="pressDigit(5)" class="py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">5</button>
+                    <button onclick="pressDigit(6)" class="py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">6</button>
+                    <button onclick="pressDigit(7)" class="py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">7</button>
+                    <button onclick="pressDigit(8)" class="py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">8</button>
+                    <button onclick="pressDigit(9)" class="py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">9</button>
+                    
+                    <button onclick="pressBackspace()" class="py-3 bg-rose-900/40 hover:bg-rose-800/60 text-rose-300 text-xl font-bold rounded-xl active:scale-95 transition shadow border border-rose-800/50 flex items-center justify-center">
+                        <i class="fa-solid fa-delete-left"></i>
+                    </button>
+                    <button onclick="pressDigit(0)" class="py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">0</button>
+                    <button onclick="submitAnswer()" class="py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xl font-bold rounded-xl active:scale-95 transition shadow border border-emerald-400 flex items-center justify-center">
+                        <i class="fa-solid fa-check"></i>
+                    </button>
+                </div>
+                
+                <div class="flex justify-between items-center mt-2 px-1">
+                    <button onclick="skipQuestion()" class="text-xs text-slate-400 hover:text-amber-300 flex items-center gap-1 transition">
+                        <i class="fa-solid fa-forward"></i> דילוג לשאלה
+                    </button>
+                    <button onclick="showHint()" class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition">
+                        <i class="fa-solid fa-lightbulb"></i> רמז ויזואלי
+                    </button>
+                </div>
+            </div>
+
+            <!-- MULTIPLE CHOICE CONTAINER -->
+            <div id="mc-container" class="glass-card p-4 rounded-2xl shadow-xl grid grid-cols-2 gap-3 hidden">
+                <!-- Buttons rendered via JS -->
+            </div>
+
+            <!-- Visual Hint Card -->
+            <div id="visual-hint-card" class="glass-card p-4 rounded-2xl shadow-xl hidden">
+                <div class="text-xs text-indigo-300 font-bold mb-2 flex justify-between items-center">
+                    <span><i class="fa-solid fa-eye mr-1"></i> המחשת התרגיל:</span>
+                    <button onclick="hideHint()" class="text-slate-400 hover:text-white">✕</button>
+                </div>
+                <div id="hint-dots-grid" class="flex flex-wrap gap-1.5 justify-center max-h-40 overflow-y-auto p-2 bg-slate-900/80 rounded-xl">
+                    <!-- Dots dynamically generated -->
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="glass-card max-w-md w-full rounded-2xl p-6 shadow-2xl border border-slate-700">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-indigo-400"></i> הגדרות המשחק
+                </h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+            </div>
+
+            <div class="space-y-4 text-sm">
+                <!-- Grid Size Selection -->
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1">גודל הלוח (כמות שאלות):</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="size-10-btn" onclick="setGridSize(10)" class="py-2.5 rounded-xl border border-indigo-500 bg-indigo-600/30 text-white font-bold">
+                            10 × 10 (100)
+                        </button>
+                        <button id="size-12-btn" onclick="setGridSize(12)" class="py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white">
+                            12 × 12 (144)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Symmetry Auto-fill (Only relevant for Mult/Add) -->
+                <div id="symmetry-setting-container" class="flex items-center justify-between py-2 border-t border-slate-800">
+                    <div>
+                        <div class="font-medium text-slate-200">חוק החילוף (סימטריה)</div>
+                        <div class="text-xs text-slate-400">מילוי אוטומטי של תרגיל הפוך (כפל/חיבור)</div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="toggle-symmetry" class="sr-only peer" onchange="toggleSymmetrySetting(this.checked)">
+                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                    </label>
+                </div>
+                
+                <div class="text-xs text-amber-300/80 italic mt-2">
+                    * שינוי הגדרות הלוח יתחיל משחק חדש במצב הנוכחי.
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end">
+                <button onclick="closeSettingsModal()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow transition">
+                    שמור וסגור
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VICTORY MODAL -->
+    <div id="victory-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-lg flex items-center justify-center p-4 z-50 hidden">
+        <div id="victory-card-content" class="bg-slate-900 max-w-lg w-full rounded-3xl p-6 sm:p-8 text-center shadow-2xl border-2 border-amber-400/60 relative overflow-hidden">
+            
+            <div class="w-16 h-16 mx-auto mb-2 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-200 flex items-center justify-center text-3xl text-slate-950 shadow-lg shadow-amber-500/40">
+                <i class="fa-solid fa-trophy animate-bounce"></i>
+            </div>
+
+            <h2 class="text-2xl sm:text-3xl font-black bg-gradient-to-r from-amber-300 via-amber-100 to-yellow-400 bg-clip-text text-transparent mb-1">
+                אלופים! השלמתם את האתגר!
+            </h2>
+            <p class="text-slate-300 text-xs sm:text-sm mb-4">כל הכבוד! גיליתם את תמונת הממתק המלאה!</p>
+
+            <!-- Revealed Candy Card Reward -->
+            <div class="bg-gradient-to-b from-slate-900/90 to-amber-950/40 p-4 rounded-2xl border-2 border-amber-400/60 shadow-xl mb-4 relative overflow-hidden">
+                <div class="text-xs text-amber-300 font-bold mb-2 uppercase tracking-wider">
+                    🎁 הורה יקר! סיימתי את הלוח בהצלחה ומגיע לי:
+                </div>
+                <div class="w-full h-48 sm:h-56 rounded-xl overflow-hidden border border-amber-300/40 shadow-inner relative mb-3 bg-slate-950">
+                    <img id="victory-candy-img" src="" alt="Candy Reward" class="w-full h-full object-cover">
+                    <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950/95 via-slate-950/70 to-transparent p-3 text-white font-black text-lg sm:text-xl flex items-center justify-center gap-2">
+                        <span id="victory-candy-icon">🍫</span>
+                        <span id="victory-candy-name">ממתק</span>
+                    </div>
+                </div>
+                <div class="text-xs sm:text-sm text-emerald-300 font-bold bg-emerald-950/80 py-2 px-3 rounded-lg border border-emerald-500/40 inline-block">
+                    ✓ משימת <span id="victory-mode-name">החשבון</span> הושלמה 100%!
+                </div>
+            </div>
+
+            <!-- Stats Summary -->
+            <div class="grid grid-cols-3 gap-2 bg-slate-900/80 p-3 rounded-xl border border-slate-700/60 mb-5 text-xs">
+                <div>
+                    <div class="text-[10px] text-slate-400">זמן כולל</div>
+                    <div class="text-sm font-bold text-indigo-300 font-mono" id="victory-time">00:00</div>
+                </div>
+                <div>
+                    <div class="text-[10px] text-slate-400">ניקוד סופי</div>
+                    <div class="text-sm font-bold text-amber-300" id="victory-score">0</div>
+                </div>
+                <div>
+                    <div class="text-[10px] text-slate-400">רצף שיא</div>
+                    <div class="text-sm font-bold text-emerald-400" id="victory-max-streak">0 🔥</div>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3" data-html2canvas-ignore="true">
+                <button onclick="takeScreenshot()" id="btn-screenshot" class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-camera text-xl"></i> צילום מסך לשליחה
+                </button>
+                <button onclick="restartGame()" class="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/30 transition">
+                    <i class="fa-solid fa-rotate-right ml-1"></i> משחק חדש
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="max-w-6xl mx-auto w-full text-center text-xs text-slate-500 mt-4">
+        אתגר החשבון הגדול • לתרגל בחייכנות ובכיף! (נשמר מקומית על המכשיר שלך)
+    </footer>
+
+    <script>
+        const CANDIES = [
+            { name: "חפיסת שוקולד מפנקת", icon: "🍫", img: "https://images.unsplash.com/photo-1511381939415-e44015466834?auto=format&fit=crop&w=800&q=80" },
+            { name: "גלידה עשירה עם סוכריות", icon: "🍦", img: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=800&q=80" },
+            { name: "דונאט צבעוני ומצופה", icon: "🍩", img: "https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&w=800&q=80" },
+            { name: "סוכריות גומי צבעוניות", icon: "🍬", img: "https://images.unsplash.com/photo-1582058091505-f87a2e55a40f?auto=format&fit=crop&w=800&q=80" },
+            { name: "סוכרייה על מקל קסומה", icon: "🍭", img: "https://images.unsplash.com/photo-1575224300306-1b8da36134ec?auto=format&fit=crop&w=800&q=80" },
+            { name: "קאפקייק שוקולד וקצפת", icon: "🧁", img: "https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?auto=format&fit=crop&w=800&q=80" },
+            { name: "חבילת פופקורן מתוק", icon: "🍿", img: "https://images.unsplash.com/photo-1585647347483-22b66260dfff?auto=format&fit=crop&w=800&q=80" },
+            { name: "עוגיות שוקולד צ'יפס", icon: "🍪", img: "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=800&q=80" }
+        ];
+
+        class SoundFX {
+            constructor() { this.ctx = null; this.enabled = true; }
+            init() { if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+            playTone(freq, type, duration, vol) {
+                if (!this.enabled) return;
+                this.init(); if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type; osc.frequency.setValueAtTime(freq, now);
+                gain.gain.setValueAtTime(vol, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + duration);
+            }
+            playCorrect() {
+                if(!this.enabled) return;
+                this.playTone(523.25, 'sine', 0.4, 0.15); // C5
+                setTimeout(() => this.playTone(659.25, 'triangle', 0.4, 0.15), 80); // E5
+                setTimeout(() => this.playTone(783.99, 'sine', 0.4, 0.15), 160); // G5
+                setTimeout(() => this.playTone(1046.50, 'triangle', 0.4, 0.15), 240); // C6
+            }
+            playWrong() {
+                if(!this.enabled) return;
+                this.init(); if(!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(160, now);
+                osc.frequency.linearRampToValueAtTime(110, now + 0.25);
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(now); osc.stop(now + 0.25);
+            }
+            playPop() { this.playTone(400, 'sine', 0.05, 0.1); }
+            playVictory() {
+                if(!this.enabled) return;
+                const notes = [523.25, 659.25, 783.99, 1046.50, 880, 1046.50];
+                const times = [0, 120, 240, 360, 520, 680];
+                times.forEach((t, i) => setTimeout(() => this.playTone(notes[i], 'triangle', 0.25, 0.2), t));
+            }
+        }
+        const sound = new SoundFX();
+
+        // Game Configuration & State
+        const MODES = {
+            'mult': { name: 'לוח הכפל', icon: 'fa-xmark', op: '×', color: 'text-amber-400', theme: 'from-amber-400 to-orange-500' },
+            'add': { name: 'לוח החיבור', icon: 'fa-plus', op: '+', color: 'text-emerald-400', theme: 'from-emerald-400 to-teal-500' },
+            'sub': { name: 'אתגר החיסור', icon: 'fa-minus', op: '-', color: 'text-rose-400', theme: 'from-rose-400 to-red-500' },
+            'div': { name: 'אתגר החילוק', icon: 'fa-divide', op: '÷', color: 'text-sky-400', theme: 'from-sky-400 to-blue-500' },
+            'mixed': { name: 'אתגר מעורב', icon: 'fa-dice', op: '?', color: 'text-purple-400', theme: 'from-purple-400 to-fuchsia-500' }
+        };
+
+        let activeMode = 'mult';
+        let gridSize = 10;
+        let boardQuestions = []; // Flat array of all questions for the grid
+        let currentTarget = null; // Currently asked question
+        let currentInput = "";
+        let answerMode = 'keypad';
+        let enableSymmetry = false;
+        
+        // Stats
+        let filledCount = 0;
+        let streak = 0;
+        let maxStreak = 0;
+        let score = 0;
+        let timerInterval = null;
+        let secondsElapsed = 0;
+        let currentCandy = null;
+
+        // LOCAL STORAGE SYSTEM (Replaces Firebase)
+        window.allSaves = {};
+        const LOCAL_STORAGE_KEY = 'mathChallengeSaves_v1';
+
+        function loadFromDevice() {
+            try {
+                const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+                if (data) {
+                    window.allSaves = JSON.parse(data);
+                }
+            } catch (e) {
+                console.error("שגיאה בטעינה מהמכשיר:", e);
+                window.allSaves = {};
+            }
+        }
+
+        function saveToDevice() {
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(window.allSaves));
+            } catch (e) {
+                console.error("שגיאה בשמירה למכשיר:", e);
+            }
+        }
+
+        function saveCurrentModeToMemory() {
+            window.allSaves[activeMode] = {
+                boardQuestions: JSON.stringify(boardQuestions),
+                gridSize: gridSize,
+                filledCount: filledCount,
+                streak: streak,
+                maxStreak: maxStreak,
+                score: score,
+                secondsElapsed: secondsElapsed,
+                currentCandy: JSON.stringify(currentCandy)
+            };
+            saveToDevice();
+        }
+
+        // INIT
+        window.onload = () => {
+            window.addEventListener('keydown', handlePhysicalKeyboard);
+            loadFromDevice();
+            loadMode(activeMode);
+        };
+
+        function switchMode(newMode) {
+            if (activeMode === newMode) return;
+            sound.playPop();
+            
+            // Save current progress before switching
+            saveCurrentModeToMemory();
+
+            activeMode = newMode;
+            
+            // UI Updates for Tabs
+            document.querySelectorAll('.mode-tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(`tab-${newMode}`).classList.add('active');
+
+            // UI Updates for Header
+            document.getElementById('header-title').innerText = MODES[newMode].name;
+            const iconEl = document.getElementById('header-icon');
+            iconEl.className = `fa-solid ${MODES[newMode].icon}`;
+            document.getElementById('header-icon-container').className = `w-12 h-12 rounded-xl bg-gradient-to-tr ${MODES[newMode].theme} flex items-center justify-center text-2xl text-white shadow-lg`;
+            
+            // Settings UI
+            const symContainer = document.getElementById('symmetry-setting-container');
+            if (newMode === 'mult' || newMode === 'add') symContainer.style.display = 'flex';
+            else symContainer.style.display = 'none';
+
+            loadMode(newMode);
+        }
+
+        function loadMode(mode) {
+            const savedData = window.allSaves ? window.allSaves[mode] : null;
+            
+            if (savedData) {
+                // Resume saved state for this mode
+                gridSize = savedData.gridSize || 10;
+                boardQuestions = JSON.parse(savedData.boardQuestions);
+                filledCount = savedData.filledCount || 0;
+                streak = savedData.streak || 0;
+                maxStreak = savedData.maxStreak || 0;
+                score = savedData.score || 0;
+                secondsElapsed = savedData.secondsElapsed || 0;
+                currentCandy = JSON.parse(savedData.currentCandy);
+                
+                applyCandyImage();
+                startTimer();
+                renderGrid();
+                updateStatsUI();
+                pickNextQuestion();
+            } else {
+                // Initialize fresh state for this mode
+                initGame(mode);
+            }
+        }
+
+        function initGame(mode = activeMode) {
+            gridSize = parseInt(gridSize) || 10;
+            boardQuestions = generateQuestions(mode, gridSize);
+            filledCount = 0;
+            streak = 0;
+            score = 0;
+            secondsElapsed = 0;
+            currentTarget = null;
+            currentInput = "";
+
+            currentCandy = CANDIES[Math.floor(Math.random() * CANDIES.length)];
+            applyCandyImage();
+            document.getElementById('candy-title-display').innerText = '❓❓❓ (ממתק סודי!)';
+
+            startTimer();
+            renderGrid();
+            updateStatsUI();
+            pickNextQuestion();
+            
+            saveCurrentModeToMemory();
+        }
+
+        function applyCandyImage() {
+            const bgElem = document.getElementById('secret-candy-bg');
+            if (bgElem && currentCandy) bgElem.style.backgroundImage = `url('${currentCandy.img}')`;
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                secondsElapsed++;
+                const mins = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
+                const secs = (secondsElapsed % 60).toString().padStart(2, '0');
+                document.getElementById('stat-timer').innerText = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function generateQuestions(mode, size) {
+            let questions = [];
+            // Generate base pool
+            for (let r = 1; r <= size; r++) {
+                for (let c = 1; c <= size; c++) {
+                    let q = { id: `${r}-${c}`, r: r, c: c, filled: false };
+                    if (mode === 'mult') {
+                        q.n1 = r; q.n2 = c; q.op = '×'; q.ans = r * c;
+                    } else if (mode === 'add') {
+                        q.n1 = r; q.n2 = c; q.op = '+'; q.ans = r + c;
+                    } else if (mode === 'sub') {
+                        // Minuend = r+c, Subtrahend = c, Ans = r
+                        q.n1 = r + c; q.n2 = c; q.op = '-'; q.ans = r;
+                    } else if (mode === 'div') {
+                        // Dividend = r*c, Divisor = c, Ans = r
+                        q.n1 = r * c; q.n2 = c; q.op = '÷'; q.ans = r;
+                    }
+                    questions.push(q);
+                }
+            }
+
+            if (mode === 'mixed') {
+                questions = [];
+                const ops = ['+', '-', '×', '÷'];
+                let idCounter = 0;
+                for (let r = 1; r <= size; r++) {
+                    for (let c = 1; c <= size; c++) {
+                        const op = ops[Math.floor(Math.random() * ops.length)];
+                        const a = Math.floor(Math.random() * size) + 1;
+                        const b = Math.floor(Math.random() * size) + 1;
+                        let q = { id: `mixed-${idCounter++}`, r: r, c: c, filled: false, op: op };
+                        if(op === '+') { q.n1 = a; q.n2 = b; q.ans = a+b; }
+                        else if(op === '×') { q.n1 = a; q.n2 = b; q.ans = a*b; }
+                        else if(op === '-') { q.n1 = a+b; q.n2 = b; q.ans = a; }
+                        else if(op === '÷') { q.n1 = a*b; q.n2 = b; q.ans = a; }
+                        questions.push(q);
+                    }
+                }
+            }
+
+            // Shuffle Sub, Div, and Mixed to prevent predictable grid patterns
+            if (['sub', 'div', 'mixed'].includes(mode)) {
+                questions.sort(() => Math.random() - 0.5);
+                // Reassign r,c coordinates purely for placement in the grid visual
+                let idx = 0;
+                for (let r = 1; r <= size; r++) {
+                    for (let c = 1; c <= size; c++) {
+                        questions[idx].r = r;
+                        questions[idx].c = c;
+                        idx++;
+                    }
+                }
+            }
+            return questions;
+        }
+
+        function renderGrid() {
+            const gridContainer = document.getElementById('math-grid');
+            gridContainer.innerHTML = '';
+            
+            const showHeaders = (activeMode === 'mult' || activeMode === 'add');
+            
+            if (showHeaders) {
+                gridContainer.style.gridTemplateColumns = `repeat(${gridSize + 1}, minmax(0, 1fr))`;
+                
+                // Corner
+                const corner = document.createElement('div');
+                corner.className = 'w-7 h-7 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center font-black text-xs sm:text-sm bg-slate-900 rounded-lg border border-slate-700 ' + MODES[activeMode].color;
+                corner.innerText = MODES[activeMode].op;
+                gridContainer.appendChild(corner);
+
+                // Col Headers
+                for (let c = 1; c <= gridSize; c++) {
+                    const header = document.createElement('div');
+                    header.className = 'w-7 h-7 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center font-bold text-xs sm:text-sm text-slate-300 bg-slate-800/90 rounded-lg border border-slate-700/60';
+                    header.innerText = c;
+                    gridContainer.appendChild(header);
+                }
+            } else {
+                gridContainer.style.gridTemplateColumns = `repeat(${gridSize}, minmax(0, 1fr))`;
+            }
+
+            // Group questions by row for rendering
+            let matrix = [];
+            for(let r=1; r<=gridSize; r++) matrix[r] = [];
+            boardQuestions.forEach(q => { matrix[q.r][q.c] = q; });
+
+            for (let r = 1; r <= gridSize; r++) {
+                if (showHeaders) {
+                    const rowHeader = document.createElement('div');
+                    rowHeader.className = 'w-7 h-7 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center font-bold text-xs sm:text-sm text-slate-300 bg-slate-800/90 rounded-lg border border-slate-700/60';
+                    rowHeader.innerText = r;
+                    gridContainer.appendChild(rowHeader);
+                }
+
+                for (let c = 1; c <= gridSize; c++) {
+                    const cellData = matrix[r][c];
+                    const cellDiv = document.createElement('div');
+                    
+                    let baseClass = 'w-7 h-7 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-lg text-xs sm:text-sm flex items-center justify-center transition-all duration-200 select-none cursor-default ';
+
+                    if (cellData.filled) {
+                        cellDiv.className = baseClass + 'cell-filled';
+                        cellDiv.innerText = cellData.ans;
+                    } else {
+                        cellDiv.className = baseClass + 'cell-empty';
+                        cellDiv.innerText = '';
+                    }
+
+                    if (currentTarget && currentTarget.id === cellData.id && !cellData.filled) {
+                        cellDiv.classList.add('cell-target');
+                        cellDiv.innerText = '?';
+                    }
+
+                    gridContainer.appendChild(cellDiv);
+                }
+            }
+        }
+
+        function pickNextQuestion() {
+            hideHint();
+            currentInput = "";
+            updateAnswerDisplay();
+
+            const unfilled = boardQuestions.filter(q => !q.filled);
+            
+            if (unfilled.length === 0) {
+                triggerVictory();
+                return;
+            }
+
+            const randomIndex = Math.floor(Math.random() * unfilled.length);
+            currentTarget = unfilled[randomIndex];
+
+            document.getElementById('num1').innerText = currentTarget.n1;
+            document.getElementById('num2').innerText = currentTarget.n2;
+            document.getElementById('operator-display').innerText = currentTarget.op;
+            document.getElementById('question-subtitle').innerText = `שאלה אקראית (${unfilled.length} משימות נותרו)`;
+
+            if (answerMode === 'mc') generateMultipleChoiceOptions();
+            
+            renderGrid();
+        }
+
+        function pressDigit(num) {
+            sound.playPop();
+            if (currentInput.length >= 4) return;
+            currentInput += num.toString();
+            updateAnswerDisplay();
+        }
+
+        function pressBackspace() {
+            sound.playPop();
+            currentInput = currentInput.slice(0, -1);
+            updateAnswerDisplay();
+        }
+
+        function updateAnswerDisplay() {
+            const display = document.getElementById('answer-display');
+            if (currentInput === "") {
+                display.innerText = "?";
+                display.classList.add('text-slate-500');
+            } else {
+                display.innerText = currentInput;
+                display.classList.remove('text-slate-500');
+            }
+        }
+
+        function handlePhysicalKeyboard(e) {
+            if (!document.getElementById('settings-modal').classList.contains('hidden')) return;
+            if (document.getElementById('victory-modal').classList.contains('hidden') === false) return;
+
+            if (e.key >= '0' && e.key <= '9') pressDigit(parseInt(e.key));
+            else if (e.key === 'Backspace') pressBackspace();
+            else if (e.key === 'Enter') submitAnswer();
+        }
+
+        function submitAnswer(userVal = null) {
+            if (!currentTarget) return;
+
+            const expected = currentTarget.ans;
+            const val = userVal !== null ? userVal : parseInt(currentInput);
+
+            if (isNaN(val)) {
+                showFeedback("אנא הזן תשובה לפני הבדיקה!", "amber");
+                return;
+            }
+
+            if (val === expected) {
+                sound.playCorrect();
+                showFeedback("כל הכבוד! תשובה נכונה! 🎉", "emerald");
+
+                currentTarget.filled = true;
+                filledCount++;
+
+                // Symmetry Logic (only for Mult and Add, where structure mathematically maps to r,c)
+                if (enableSymmetry && (activeMode === 'mult' || activeMode === 'add') && currentTarget.r !== currentTarget.c) {
+                    const symQ = boardQuestions.find(q => q.r === currentTarget.c && q.c === currentTarget.r);
+                    if (symQ && !symQ.filled) {
+                        symQ.filled = true;
+                        filledCount++;
+                    }
+                }
+
+                streak++;
+                if (streak > maxStreak) maxStreak = streak;
+                score += 10 + (streak * 2);
+
+                updateStatsUI();
+                saveCurrentModeToMemory();
+
+                setTimeout(() => { pickNextQuestion(); }, 350);
+
+            } else {
+                sound.playWrong();
+                streak = 0;
+                updateStatsUI();
+                saveCurrentModeToMemory();
+
+                showFeedback("תשובה שגויה... נסה שוב!", "rose");
+                
+                const container = document.getElementById('equation-container');
+                container.classList.add('shake');
+                setTimeout(() => container.classList.remove('shake'), 400);
+
+                currentInput = "";
+                updateAnswerDisplay();
+            }
+        }
+
+        function setAnswerMode(mode) {
+            sound.playPop();
+            answerMode = mode;
+            const keypadBtn = document.getElementById('mode-keypad-btn');
+            const mcBtn = document.getElementById('mode-mc-btn');
+            const keypadBox = document.getElementById('keypad-container');
+            const mcBox = document.getElementById('mc-container');
+
+            if (mode === 'keypad') {
+                keypadBtn.className = "px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-medium shadow transition";
+                mcBtn.className = "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white font-medium transition";
+                keypadBox.classList.remove('hidden');
+                mcBox.classList.add('hidden');
+            } else {
+                mcBtn.className = "px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-medium shadow transition";
+                keypadBtn.className = "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white font-medium transition";
+                keypadBox.classList.add('hidden');
+                mcBox.classList.remove('hidden');
+                generateMultipleChoiceOptions();
+            }
+        }
+
+        function generateMultipleChoiceOptions() {
+            if (!currentTarget) return;
+            const mcContainer = document.getElementById('mc-container');
+            mcContainer.innerHTML = '';
+            
+            const correctVal = currentTarget.ans;
+            const op = currentTarget.op;
+            let options = new Set([correctVal]);
+            let loopSafety = 0;
+
+            while (options.size < 4 && loopSafety < 50) {
+                let distractor;
+                if (op === '×') {
+                    // Typical mult distractors: off by one factor, or offset by 10
+                    let errModes = [
+                        correctVal + currentTarget.n1,
+                        correctVal - currentTarget.n1,
+                        correctVal + currentTarget.n2,
+                        correctVal - currentTarget.n2,
+                        correctVal + 10,
+                        correctVal - 10
+                    ];
+                    distractor = errModes[Math.floor(Math.random() * errModes.length)];
+                } else if (op === '÷') {
+                    distractor = correctVal + (Math.floor(Math.random() * 4) - 2); // +- 1 or 2
+                } else { // + or -
+                    let offsets = [1, -1, 2, -2, 10, -10];
+                    distractor = correctVal + offsets[Math.floor(Math.random() * offsets.length)];
+                }
+                
+                if (distractor && distractor > 0 && distractor !== correctVal) options.add(distractor);
+                loopSafety++;
+            }
+            
+            // Fallback
+            let fallbackOpt = correctVal + 1;
+            while (options.size < 4) { if (fallbackOpt !== correctVal) options.add(fallbackOpt); fallbackOpt++; }
+
+            const shuffled = Array.from(options).sort(() => Math.random() - 0.5);
+            shuffled.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "py-4 bg-slate-800/90 hover:bg-indigo-600 text-white font-bold text-2xl rounded-xl border border-slate-700 active:scale-95 transition shadow";
+                btn.innerText = opt;
+                btn.onclick = () => submitAnswer(opt);
+                mcContainer.appendChild(btn);
+            });
+        }
+
+        function skipQuestion() {
+            sound.playPop();
+            showFeedback('דולג לשאלה הבאה', 'amber');
+            pickNextQuestion();
+        }
+
+        function showHint() {
+            sound.playPop();
+            if (!currentTarget) return;
+            const card = document.getElementById('visual-hint-card');
+            const dotsContainer = document.getElementById('hint-dots-grid');
+            dotsContainer.innerHTML = '';
+            
+            const { n1, n2, op } = currentTarget;
+
+            if (op === '+') {
+                const g1 = document.createElement('div'); g1.className = "flex flex-wrap gap-1 justify-center items-center w-full";
+                for(let i=0; i<n1; i++) { const d = document.createElement('div'); d.className = 'w-3 h-3 rounded-full bg-blue-400'; g1.appendChild(d); }
+                const plus = document.createElement('div'); plus.className = "font-bold text-slate-400 mx-2"; plus.innerText = "+"; g1.appendChild(plus);
+                for(let i=0; i<n2; i++) { const d = document.createElement('div'); d.className = 'w-3 h-3 rounded-full bg-green-400'; g1.appendChild(d); }
+                dotsContainer.appendChild(g1);
+            } 
+            else if (op === '-') {
+                const g1 = document.createElement('div'); g1.className = "flex flex-wrap gap-1 justify-center";
+                for(let i=0; i<n1; i++) {
+                    const d = document.createElement('div');
+                    d.className = `w-3 h-3 rounded-full flex items-center justify-center text-[8px] font-bold ${i < n2 ? 'bg-red-500/50 text-red-200 line-through' : 'bg-blue-400 text-transparent'}`;
+                    if(i < n2) d.innerText = 'x';
+                    g1.appendChild(d);
+                }
+                dotsContainer.appendChild(g1);
+            }
+            else if (op === '×') {
+                for(let i=0; i<n1*n2; i++) {
+                    const d = document.createElement('div'); d.className = 'w-3 h-3 rounded-full bg-indigo-400';
+                    dotsContainer.appendChild(d);
+                }
+                dotsContainer.style.maxWidth = `${n2 * (12+6)}px`; // roughly constrain width
+            }
+            else if (op === '÷') {
+                const groups = document.createElement('div'); groups.className = "flex flex-wrap gap-3 justify-center";
+                const dotsPerGroup = n1 / n2;
+                for(let g=0; g<n2; g++) {
+                    const box = document.createElement('div'); box.className = "border border-sky-500/50 rounded p-1 flex flex-wrap gap-1 justify-center bg-sky-900/30";
+                    box.style.width = 'fit-content';
+                    for(let d=0; d<dotsPerGroup; d++) {
+                        const dot = document.createElement('div'); dot.className = 'w-2 h-2 rounded-full bg-sky-400';
+                        box.appendChild(dot);
+                    }
+                    groups.appendChild(box);
+                }
+                dotsContainer.appendChild(groups);
+            }
+
+            card.classList.remove('hidden');
+        }
+
+        function hideHint() { document.getElementById('visual-hint-card').classList.add('hidden'); }
+
+        function showFeedback(text, color) {
+            const fb = document.getElementById('feedback-msg');
+            fb.innerText = text;
+            if (color === 'emerald') fb.className = "h-6 text-sm font-bold text-emerald-400 animate-bounce";
+            else if (color === 'rose') fb.className = "h-6 text-sm font-bold text-rose-400";
+            else if (color === 'indigo') fb.className = "h-6 text-sm font-bold text-indigo-300";
+            else fb.className = "h-6 text-sm font-bold text-amber-300";
+        }
+
+        function updateStatsUI() {
+            const totalCells = gridSize * gridSize;
+            document.getElementById('stat-progress').innerText = `${filledCount} / ${totalCells}`;
+            document.getElementById('stat-streak').innerText = streak;
+            document.getElementById('stat-score').innerText = score;
+
+            const pct = Math.round((filledCount / totalCells) * 100);
+            document.getElementById('progress-bar-inner').style.width = `${pct}%`;
+            document.getElementById('reveal-pct-display').innerText = `${pct}%`;
+        }
+
+        function triggerVictory() {
+            sound.playVictory();
+            if (timerInterval) clearInterval(timerInterval);
+
+            if (currentCandy) {
+                document.getElementById('victory-candy-img').src = currentCandy.img;
+                document.getElementById('victory-candy-icon').innerText = currentCandy.icon;
+                document.getElementById('victory-candy-name').innerText = currentCandy.name;
+            }
+            document.getElementById('victory-mode-name').innerText = MODES[activeMode].name;
+
+            if (typeof confetti === 'function') confetti({ particleCount: 220, spread: 110, origin: { y: 0.6 }});
+
+            const mins = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
+            const secs = (secondsElapsed % 60).toString().padStart(2, '0');
+            document.getElementById('victory-time').innerText = `${mins}:${secs}`;
+            document.getElementById('victory-score').innerText = score;
+            document.getElementById('victory-max-streak').innerText = `${maxStreak} 🔥`;
+
+            document.getElementById('victory-modal').classList.remove('hidden');
+        }
+
+        function restartGame() {
+            document.getElementById('victory-modal').classList.add('hidden');
+            initGame(activeMode);
+        }
+
+        function confirmRestart() {
+            if (filledCount > 0 && confirm('האם ברצונך לאפס את הלוח הנוכחי ולהתחיל מחדש?')) {
+                initGame(activeMode);
+            }
+        }
+
+        function takeScreenshot() {
+            sound.playPop();
+            const element = document.getElementById('victory-card-content');
+            const btn = document.getElementById('btn-screenshot');
+            const btnOrigText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xl"></i> שומר...';
+            
+            html2canvas(element, { backgroundColor: '#0f172a', scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `אתגר_${MODES[activeMode].name}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                btn.innerHTML = btnOrigText;
+            }).catch(err => {
+                console.error(err);
+                btn.innerHTML = btnOrigText;
+                alert("שגיאה בשמירת התמונה.");
+            });
+        }
+
+        function openSettingsModal() { sound.playPop(); document.getElementById('settings-modal').classList.remove('hidden'); }
+        function closeSettingsModal() { sound.playPop(); document.getElementById('settings-modal').classList.add('hidden'); }
+        
+        function setGridSize(size) {
+            sound.playPop();
+            gridSize = size;
+            document.getElementById('size-10-btn').className = size === 10 ? "py-2.5 rounded-xl border border-indigo-500 bg-indigo-600/30 text-white font-bold" : "py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white";
+            document.getElementById('size-12-btn').className = size === 12 ? "py-2.5 rounded-xl border border-indigo-500 bg-indigo-600/30 text-white font-bold" : "py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white";
+            initGame(activeMode);
+        }
+
+        function toggleSymmetrySetting(val) { enableSymmetry = val; }
+        
+        function toggleSound() {
+            sound.enabled = !sound.enabled;
+            document.getElementById('icon-sound').className = sound.enabled ? "fa-solid fa-volume-high text-lg text-white" : "fa-solid fa-volume-xmark text-lg text-rose-400";
+        }
+    </script>
+</body>
+</html>
