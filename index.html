@@ -23,6 +23,34 @@
             user-select: none;
         }
 
+        /* Grid cells size themselves from --cell, which fitGrid() sets to whatever fits */
+        #math-grid > div {
+            width: var(--cell, 28px);
+            height: var(--cell, 28px);
+            font-size: calc(var(--cell, 28px) * 0.42);
+            line-height: 1;
+        }
+
+        /* Short phones (iPhone SE and similar): buy the board height from the inputs */
+        @media (max-height: 720px) and (max-width: 1023px) {
+            #keypad-container { padding: 0.375rem; gap: 0.25rem; }
+            #keypad-container button { padding-top: 0.3rem; padding-bottom: 0.3rem; font-size: 1.05rem; }
+            #equation-container { font-size: 1.35rem; margin-top: 0.15rem; margin-bottom: 0.15rem; }
+            #answer-display { min-height: 36px; min-width: 46px; font-size: 1.35rem; }
+            #prize-row { font-size: 0.65rem; margin-bottom: 0.15rem; }
+            #prize-row .fa-gift { font-size: 0.8rem; }
+        }
+
+        /* The board sizes itself to fit, so the scrollbar is a silent fallback, not furniture */
+        #grid-viewport { scrollbar-width: none; }
+        #grid-viewport::-webkit-scrollbar { display: none; }
+
+        /* Phone: lock the app to one screen and let the board take the slack */
+        @media (max-width: 1023px) {
+            html, body { height: 100%; overflow: hidden; }
+            body { height: 100dvh; }
+        }
+
         .glass-card {
             background: rgba(30, 41, 59, 0.75);
             backdrop-filter: blur(12px);
@@ -85,7 +113,7 @@
         ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.5); border-radius: 4px; }
     </style>
 </head>
-<body class="p-2 sm:p-4 md:p-6 flex flex-col min-h-screen justify-between">
+<body class="p-2 sm:p-4 md:p-6 flex flex-col lg:min-h-screen lg:justify-between">
 
     <!-- ===== START SCREEN: pick the kind of exercises before playing ===== -->
     <div id="start-screen" class="fixed inset-0 z-[60] bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 flex flex-col items-center justify-center p-4 overflow-y-auto">
@@ -105,75 +133,75 @@
     </div>
 
 
-    <header class="max-w-6xl mx-auto w-full mb-4">
+    <header class="max-w-6xl mx-auto w-full mb-2 sm:mb-4 shrink-0">
         
-        <div class="glass-card rounded-2xl p-4 flex flex-wrap justify-between items-center gap-4 shadow-xl border border-indigo-500/20">
-            <div class="flex items-center gap-3">
-                <div id="header-icon-container" class="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-2xl text-white shadow-lg shadow-indigo-500/30">
+        <div class="glass-card rounded-2xl p-1.5 sm:p-4 flex flex-nowrap sm:flex-wrap justify-between items-center gap-1.5 sm:gap-4 shadow-xl border border-indigo-500/20">
+            <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+                <div id="header-icon-container" class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-lg sm:text-2xl text-white shadow-lg shadow-indigo-500/30">
                     <i id="header-icon" class="fa-solid fa-xmark"></i>
                 </div>
-                <div>
-                    <h1 id="header-title" class="text-xl sm:text-2xl font-black bg-gradient-to-r from-amber-300 via-indigo-200 to-emerald-300 bg-clip-text text-transparent">
+                <div class="hidden sm:block">
+                    <h1 id="header-title" class="text-sm sm:text-2xl font-black bg-gradient-to-r from-amber-300 via-indigo-200 to-emerald-300 bg-clip-text text-transparent">
                         לוח הכפל
                     </h1>
-                    <p class="text-xs text-slate-400">ענו נכונה וגלו איזה ממתק מסתתר!</p>
+                    <p class="hidden sm:block text-xs text-slate-400">ענו נכונה וגלו איזה ממתק מסתתר!</p>
                 </div>
             </div>
 
             <!-- Score Stats Bar -->
-            <div class="flex items-center gap-3 sm:gap-6 bg-slate-900/80 py-2 px-4 rounded-xl border border-slate-700/50 text-xs sm:text-sm">
+            <div class="flex items-center gap-1.5 sm:gap-6 bg-slate-900/80 py-0.5 px-1.5 sm:py-2 sm:px-4 rounded-xl border border-slate-700/50 text-xs sm:text-sm min-w-0">
                 <div class="text-center">
-                    <div class="text-slate-400 text-[10px] sm:text-xs">התקדמות</div>
-                    <div class="font-bold text-amber-400 text-sm sm:text-base" id="stat-progress">0 / 100</div>
+                    <div class="text-slate-400 text-[8px] sm:text-xs leading-tight">התקדמות</div>
+                    <div class="font-bold text-amber-400 text-[11px] sm:text-base leading-tight" id="stat-progress">0 / 100</div>
                 </div>
-                <div class="h-8 w-px bg-slate-700"></div>
+                <div class="h-5 sm:h-8 w-px bg-slate-700"></div>
                 <div class="text-center">
-                    <div class="text-slate-400 text-[10px] sm:text-xs">רצף תשובות</div>
-                    <div class="font-bold text-emerald-400 text-sm sm:text-base flex items-center justify-center gap-1">
+                    <div class="text-slate-400 text-[8px] sm:text-xs leading-tight">רצף תשובות</div>
+                    <div class="font-bold text-emerald-400 text-[11px] sm:text-base leading-tight flex items-center justify-center gap-0.5 sm:gap-1">
                         <span id="stat-streak">0</span> <i class="fa-solid fa-fire text-amber-500 text-xs"></i>
                     </div>
                 </div>
-                <div class="h-8 w-px bg-slate-700"></div>
+                <div class="h-5 sm:h-8 w-px bg-slate-700"></div>
                 <div class="text-center">
-                    <div class="text-slate-400 text-[10px] sm:text-xs">זמן</div>
+                    <div class="text-slate-400 text-[8px] sm:text-xs leading-tight">זמן</div>
                     <div class="font-bold text-indigo-300 text-sm sm:text-base font-mono" id="stat-timer">00:00</div>
                 </div>
-                <div class="h-8 w-px bg-slate-700"></div>
+                <div class="h-5 sm:h-8 w-px bg-slate-700"></div>
                 <div class="text-center">
-                    <div class="text-slate-400 text-[10px] sm:text-xs">ניקוד</div>
-                    <div class="font-bold text-purple-300 text-sm sm:text-base" id="stat-score">0</div>
+                    <div class="text-slate-400 text-[8px] sm:text-xs leading-tight">ניקוד</div>
+                    <div class="font-bold text-purple-300 text-[11px] sm:text-base leading-tight" id="stat-score">0</div>
                 </div>
             </div>
 
             <!-- Action Buttons -->
-            <div class="flex items-center gap-2">
-                <button onclick="openStartScreen()" class="p-2.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 transition" title="בחירת סוג תרגילים">
-                    <i class="fa-solid fa-table-cells-large text-lg"></i>
+            <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+                <button onclick="openStartScreen()" class="p-1.5 sm:p-2.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 transition" title="בחירת סוג תרגילים">
+                    <i class="fa-solid fa-table-cells-large text-sm sm:text-lg"></i>
                 </button>
-                <button onclick="toggleSound()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="צלילים">
-                    <i class="fa-solid fa-volume-high text-lg" id="icon-sound"></i>
+                <button onclick="toggleSound()" class="p-1.5 sm:p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="צלילים">
+                    <i class="fa-solid fa-volume-high text-sm sm:text-lg" id="icon-sound"></i>
                 </button>
-                <button onclick="openSettingsModal()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="הגדרות">
-                    <i class="fa-solid fa-gear text-lg"></i>
+                <button onclick="openSettingsModal()" class="p-1.5 sm:p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="הגדרות">
+                    <i class="fa-solid fa-gear text-sm sm:text-lg"></i>
                 </button>
-                <button onclick="confirmRestart()" class="p-2.5 rounded-xl bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 transition" title="התחל מחדש לוח זה">
-                    <i class="fa-solid fa-rotate-right text-lg"></i>
+                <button onclick="confirmRestart()" class="p-1.5 sm:p-2.5 rounded-xl bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 transition" title="התחל מחדש לוח זה">
+                    <i class="fa-solid fa-rotate-right text-sm sm:text-lg"></i>
                 </button>
             </div>
         </div>
 
         <!-- Progress Bar -->
-        <div class="w-full bg-slate-800/80 rounded-full h-2.5 mt-2 overflow-hidden border border-slate-700/50 p-0.5">
+        <div class="w-full bg-slate-800/80 rounded-full h-1.5 sm:h-2.5 mt-1 sm:mt-2 overflow-hidden border border-slate-700/50 p-0.5">
             <div id="progress-bar-inner" class="bg-gradient-to-r from-amber-400 via-indigo-500 to-emerald-400 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
         </div>
     </header>
 
-    <main class="max-w-6xl mx-auto w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    <main class="max-w-6xl mx-auto w-full flex-1 min-h-0 grid grid-cols-1 grid-rows-[1fr_auto] lg:grid-rows-1 lg:grid-cols-12 gap-2 sm:gap-4 lg:gap-6 lg:items-start">
         
         <!-- LEFT/CENTER: The Puzzle Grid -->
-        <section class="lg:col-span-7 xl:col-span-8 order-2 lg:order-1 glass-card p-3 sm:p-5 rounded-2xl shadow-xl flex flex-col items-center">
+        <section class="lg:col-span-7 xl:col-span-8 order-1 glass-card p-2 sm:p-5 rounded-2xl shadow-xl flex flex-col items-center min-h-0 overflow-hidden">
             
-            <div class="flex flex-wrap justify-between items-center w-full mb-3 px-1 gap-2">
+            <div id="prize-row" class="flex flex-wrap justify-between items-center w-full mb-1.5 sm:mb-3 px-1 gap-1 sm:gap-2 shrink-0">
                 <h2 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
                     <i class="fa-solid fa-gift text-amber-400 text-base animate-bounce"></i>
                     <span>פרס מסתורי: <span id="candy-title-display" class="text-amber-300 font-bold">❓❓❓ (ממתק סודי!)</span></span>
@@ -184,13 +212,13 @@
             </div>
 
             <!-- Table Wrapper -->
-            <div class="w-full overflow-x-auto p-1 flex justify-center">
-                <div id="grid-container-relative" class="relative rounded-2xl overflow-hidden p-2 bg-slate-900 border border-indigo-500/30">
+            <div id="grid-viewport" class="w-full flex-1 min-h-0 p-1 flex items-center justify-center overflow-auto">
+                <div id="grid-container-relative" class="relative rounded-2xl overflow-hidden p-1.5 sm:p-2 bg-slate-900 border border-indigo-500/30">
                     <!-- Underlay Secret Candy Image -->
                     <div id="secret-candy-bg" class="absolute inset-0 bg-cover bg-center transition-all duration-500 opacity-95"></div>
                     
                     <!-- Grid Layer -->
-                    <div id="math-grid" class="relative z-10 grid gap-1 sm:gap-1.5 auto-cols-max">
+                    <div id="math-grid" class="relative z-10 grid auto-cols-max">
                         <!-- Dynamic Grid generated via JS -->
                     </div>
                 </div>
@@ -198,65 +226,65 @@
         </section>
 
         <!-- RIGHT: Active Question & Inputs -->
-        <section class="lg:col-span-5 xl:col-span-4 order-1 lg:order-2 flex flex-col gap-4">
+        <section class="lg:col-span-5 xl:col-span-4 order-2 flex flex-col gap-2 sm:gap-4 shrink-0">
             
             <!-- Question Box -->
-            <div class="glass-card p-5 sm:p-6 rounded-2xl shadow-xl text-center relative overflow-hidden border-2 border-indigo-500/30">
+            <div class="glass-card p-2 sm:p-6 rounded-2xl shadow-xl text-center relative overflow-hidden border-2 border-indigo-500/30">
                 <div class="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" id="q-border-top"></div>
 
-                <div class="text-xs font-medium text-indigo-300 uppercase tracking-wider mb-2" id="question-subtitle">
+                <div class="hidden sm:block text-xs font-medium text-indigo-300 uppercase tracking-wider mb-2" id="question-subtitle">
                     שאלה אקראית מתוך הלוח
                 </div>
 
                 <!-- Equation Display (Enforced LTR math format) -->
-                <div dir="ltr" style="direction: ltr;" class="my-4 flex flex-row items-center justify-center gap-3 text-3xl sm:text-5xl font-black tracking-tight" id="equation-container">
+                <div dir="ltr" style="direction: ltr;" class="my-1.5 sm:my-4 flex flex-row items-center justify-center gap-2 sm:gap-3 text-2xl sm:text-5xl font-black tracking-tight" id="equation-container">
                     <span id="num1" class="text-amber-400 drop-shadow">?</span>
                     <span id="operator-display" class="text-indigo-400"></span>
                     <span id="num2" class="text-emerald-400 drop-shadow">?</span>
                     <span class="text-slate-400">=</span>
-                    <div class="inline-flex items-center justify-center min-w-[65px] min-h-[55px] px-3 py-1 bg-slate-900/90 rounded-2xl border-2 border-indigo-500/50 text-white font-mono shadow-inner text-3xl sm:text-4xl text-center" id="answer-display">
+                    <div class="inline-flex items-center justify-center min-w-[52px] min-h-[42px] sm:min-w-[65px] sm:min-h-[55px] px-2 sm:px-3 py-1 bg-slate-900/90 rounded-2xl border-2 border-indigo-500/50 text-white font-mono shadow-inner text-2xl sm:text-4xl text-center" id="answer-display">
                         ?
                     </div>
                 </div>
 
                 <!-- Mode Selector Toggle -->
-                <div class="flex justify-center gap-2 my-2 text-xs">
-                    <button id="mode-keypad-btn" onclick="setAnswerMode('keypad')" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-medium shadow transition">
+                <div class="flex justify-center gap-2 my-1 sm:my-2 text-xs">
+                    <button id="mode-keypad-btn" onclick="setAnswerMode('keypad')" class="px-3 py-1 sm:py-1.5 rounded-lg bg-indigo-600 text-white font-medium shadow transition">
                         <i class="fa-solid fa-keyboard ml-1"></i> מקלדת
                     </button>
-                    <button id="mode-mc-btn" onclick="setAnswerMode('mc')" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white font-medium transition">
+                    <button id="mode-mc-btn" onclick="setAnswerMode('mc')" class="px-3 py-1 sm:py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white font-medium transition">
                         <i class="fa-solid fa-list-check ml-1"></i> 4 אפשרויות
                     </button>
                 </div>
 
                 <!-- Feedback Message -->
-                <div id="feedback-msg" class="h-6 text-sm font-bold transition-all duration-200 mt-2"></div>
+                <div id="feedback-msg" class="h-4 sm:h-6 text-xs sm:text-sm font-bold transition-all duration-200 mt-0.5 sm:mt-2"></div>
             </div>
 
             <!-- KEYPAD CONTAINER -->
-            <div id="keypad-container" class="glass-card p-4 rounded-2xl shadow-xl flex flex-col gap-2">
-                <div class="grid grid-cols-3 gap-2" dir="ltr">
+            <div id="keypad-container" class="glass-card p-2 sm:p-4 rounded-2xl shadow-xl flex flex-col gap-1.5 sm:gap-2">
+                <div class="grid grid-cols-3 gap-1.5 sm:gap-2" dir="ltr">
                     <!-- Numbers -->
-                    <button onclick="pressDigit(1)" class="py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">1</button>
-                    <button onclick="pressDigit(2)" class="py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">2</button>
-                    <button onclick="pressDigit(3)" class="py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">3</button>
-                    <button onclick="pressDigit(4)" class="py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">4</button>
-                    <button onclick="pressDigit(5)" class="py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">5</button>
-                    <button onclick="pressDigit(6)" class="py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">6</button>
-                    <button onclick="pressDigit(7)" class="py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">7</button>
-                    <button onclick="pressDigit(8)" class="py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">8</button>
-                    <button onclick="pressDigit(9)" class="py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">9</button>
+                    <button onclick="pressDigit(1)" class="py-2 sm:py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-xl sm:text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">1</button>
+                    <button onclick="pressDigit(2)" class="py-2 sm:py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-xl sm:text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">2</button>
+                    <button onclick="pressDigit(3)" class="py-2 sm:py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-xl sm:text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">3</button>
+                    <button onclick="pressDigit(4)" class="py-2 sm:py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-xl sm:text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">4</button>
+                    <button onclick="pressDigit(5)" class="py-2 sm:py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-xl sm:text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">5</button>
+                    <button onclick="pressDigit(6)" class="py-2 sm:py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-xl sm:text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">6</button>
+                    <button onclick="pressDigit(7)" class="py-2 sm:py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-xl sm:text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">7</button>
+                    <button onclick="pressDigit(8)" class="py-2 sm:py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-xl sm:text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">8</button>
+                    <button onclick="pressDigit(9)" class="py-2 sm:py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-xl sm:text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">9</button>
                     
-                    <button onclick="pressBackspace()" class="py-3 bg-rose-900/40 hover:bg-rose-800/60 text-rose-300 text-xl font-bold rounded-xl active:scale-95 transition shadow border border-rose-800/50 flex items-center justify-center">
+                    <button onclick="pressBackspace()" class="py-2 sm:py-3 bg-rose-900/40 hover:bg-rose-800/60 text-rose-300 text-xl font-bold rounded-xl active:scale-95 transition shadow border border-rose-800/50 flex items-center justify-center">
                         <i class="fa-solid fa-delete-left"></i>
                     </button>
-                    <button onclick="pressDigit(0)" class="py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">0</button>
-                    <button onclick="submitAnswer()" class="py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xl font-bold rounded-xl active:scale-95 transition shadow border border-emerald-400 flex items-center justify-center">
+                    <button onclick="pressDigit(0)" class="py-2 sm:py-3 bg-slate-800/90 hover:bg-slate-700 text-white text-xl sm:text-2xl font-bold rounded-xl active:scale-95 transition shadow border border-slate-700">0</button>
+                    <button onclick="submitAnswer()" class="py-2 sm:py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xl font-bold rounded-xl active:scale-95 transition shadow border border-emerald-400 flex items-center justify-center">
                         <i class="fa-solid fa-check"></i>
                     </button>
                 </div>
                 
-                <div class="flex justify-between items-center mt-2 px-1">
+                <div class="flex justify-between items-center mt-1 sm:mt-2 px-1">
                     <button onclick="skipQuestion()" class="text-xs text-slate-400 hover:text-amber-300 flex items-center gap-1 transition">
                         <i class="fa-solid fa-forward"></i> דילוג לשאלה
                     </button>
@@ -395,7 +423,7 @@
     </div>
 
     <!-- FOOTER -->
-    <footer class="max-w-6xl mx-auto w-full text-center text-xs text-slate-500 mt-4">
+    <footer class="hidden lg:block max-w-6xl mx-auto w-full text-center text-xs text-slate-500 mt-4">
         אתגר החשבון הגדול • לתרגל בחייכנות ובכיף! (נשמר מקומית על המכשיר שלך)
     </footer>
 
@@ -555,7 +583,7 @@
                 } else if (done > 0) {
                     badge = '<span class="text-[10px] sm:text-xs font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-full">' + pct + '% &middot; המשך</span>';
                 } else {
-                    badge = '<span class="text-[10px] sm:text-xs font-medium text-slate-400 bg-slate-800/80 border border-slate-700 px-2 py-0.5 rounded-full">התחל</span>';
+                    badge = '';   // nothing to report yet — the card itself is the invitation
                 }
 
                 // Combined modes show their two symbols as text; single modes show their icon
@@ -600,6 +628,7 @@
 
             document.getElementById('start-screen').classList.add('hidden');
             loadMode(newMode);
+            requestAnimationFrame(fitGrid);   // board was display:none until now
         }
 
         function openStartScreen() {
@@ -753,14 +782,14 @@
                 
                 // Corner
                 const corner = document.createElement('div');
-                corner.className = 'w-7 h-7 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center font-black text-xs sm:text-sm bg-slate-900 rounded-lg border border-slate-700 ' + MODES[activeMode].color;
+                corner.className = 'flex items-center justify-center font-black bg-slate-900 rounded-lg border border-slate-700 ' + MODES[activeMode].color;
                 corner.innerText = MODES[activeMode].op;
                 gridContainer.appendChild(corner);
 
                 // Col Headers
                 for (let c = 1; c <= gridSize; c++) {
                     const header = document.createElement('div');
-                    header.className = 'w-7 h-7 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center font-bold text-xs sm:text-sm text-slate-300 bg-slate-800/90 rounded-lg border border-slate-700/60';
+                    header.className = 'flex items-center justify-center font-bold text-slate-300 bg-slate-800/90 rounded-lg border border-slate-700/60';
                     header.innerText = c;
                     gridContainer.appendChild(header);
                 }
@@ -776,7 +805,7 @@
             for (let r = 1; r <= gridSize; r++) {
                 if (showHeaders) {
                     const rowHeader = document.createElement('div');
-                    rowHeader.className = 'w-7 h-7 sm:w-10 sm:h-10 md:w-11 md:h-11 flex items-center justify-center font-bold text-xs sm:text-sm text-slate-300 bg-slate-800/90 rounded-lg border border-slate-700/60';
+                    rowHeader.className = 'flex items-center justify-center font-bold text-slate-300 bg-slate-800/90 rounded-lg border border-slate-700/60';
                     rowHeader.innerText = r;
                     gridContainer.appendChild(rowHeader);
                 }
@@ -785,7 +814,7 @@
                     const cellData = matrix[r][c];
                     const cellDiv = document.createElement('div');
                     
-                    let baseClass = 'w-7 h-7 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-lg text-xs sm:text-sm flex items-center justify-center transition-all duration-200 select-none cursor-default ';
+                    let baseClass = 'rounded-lg flex items-center justify-center transition-all duration-200 select-none cursor-default ';
 
                     if (cellData.filled) {
                         cellDiv.className = baseClass + 'cell-filled';
@@ -803,7 +832,47 @@
                     gridContainer.appendChild(cellDiv);
                 }
             }
+
+            fitGrid();
         }
+
+        // The board is the reward, so it must stay on screen. Size its cells to the
+        // space actually left over instead of a fixed w-7/w-10/w-11.
+        function fitGrid() {
+            const gridEl = document.getElementById('math-grid');
+            const viewport = document.getElementById('grid-viewport');
+            if (!gridEl || !viewport || !gridEl.children.length) return;
+
+            const cols = gridSize + (MODES[activeMode].table ? 1 : 0);
+            const gap = window.innerWidth >= 640 ? 6 : 3;
+            const chrome = window.innerWidth >= 640 ? 20 : 14;   // container padding + border
+
+            const availW = viewport.clientWidth  - chrome;
+            const availH = viewport.clientHeight - chrome;
+            if (availW <= 0) return;
+
+            const byWidth = (availW - gap * (cols - 1)) / cols;
+
+            // The one-screen shell only applies below lg. At lg and up the page scrolls
+            // normally, so height is not a real bound there — size by width and let the
+            // 44px cap decide, which is what the board used before it became fluid.
+            const heightBound = window.innerWidth < 1024 && availH > 40;
+            const byHeight = heightBound
+                ? (availH - gap * (cols - 1)) / cols
+                : Infinity;
+
+            const cell = Math.max(12, Math.min(Math.floor(Math.min(byWidth, byHeight)), 44));
+
+            gridEl.style.setProperty('--cell', cell + 'px');
+            gridEl.style.gap = gap + 'px';
+        }
+
+        let fitGridTimer = null;
+        window.addEventListener('resize', () => {
+            clearTimeout(fitGridTimer);
+            fitGridTimer = setTimeout(fitGrid, 100);
+        });
+        window.addEventListener('orientationchange', () => setTimeout(fitGrid, 250));
 
         function pickNextQuestion() {
             hideHint();
