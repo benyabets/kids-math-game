@@ -74,9 +74,17 @@
             backdrop-filter: blur(0px) !important;
         }
 
+        /* The candy is hidden by the tiles, so nothing between them may be see-through.
+           Tiles sit flush (gap: 0) and the separation is an OPAQUE border drawn on the
+           tile itself. Only a filled tile is a window onto the picture. */
+        #math-grid > div {
+            border: 1px solid #0f172a;
+            box-sizing: border-box;
+        }
+
         .cell-empty {
             background: #1e293b !important;
-            border: 1px dashed rgba(255, 255, 255, 0.18);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
         }
 
         .cell-target {
@@ -213,12 +221,12 @@
 
             <!-- Table Wrapper -->
             <div id="grid-viewport" class="w-full flex-1 min-h-0 p-1 flex items-center justify-center overflow-auto">
-                <div id="grid-container-relative" class="relative rounded-2xl overflow-hidden p-1.5 sm:p-2 bg-slate-900 border border-indigo-500/30">
+                <div id="grid-container-relative" class="relative rounded-2xl overflow-hidden bg-slate-900 border border-indigo-500/30">
                     <!-- Underlay Secret Candy Image -->
                     <div id="secret-candy-bg" class="absolute inset-0 bg-cover bg-center transition-all duration-500 opacity-95"></div>
                     
                     <!-- Grid Layer -->
-                    <div id="math-grid" class="relative z-10 grid auto-cols-max">
+                    <div id="math-grid" class="relative z-10 grid">
                         <!-- Dynamic Grid generated via JS -->
                     </div>
                 </div>
@@ -778,23 +786,25 @@
             const showHeaders = !!MODES[activeMode].table;
             
             if (showHeaders) {
-                gridContainer.style.gridTemplateColumns = `repeat(${gridSize + 1}, minmax(0, 1fr))`;
+                gridContainer.style.gridTemplateColumns = `repeat(${gridSize + 1}, var(--cell, 28px))`;
+                gridContainer.style.gridTemplateRows = `repeat(${gridSize + 1}, var(--cell, 28px))`;
                 
                 // Corner
                 const corner = document.createElement('div');
-                corner.className = 'flex items-center justify-center font-black bg-slate-900 rounded-lg border border-slate-700 ' + MODES[activeMode].color;
+                corner.className = 'flex items-center justify-center font-black bg-slate-900 ' + MODES[activeMode].color;
                 corner.innerText = MODES[activeMode].op;
                 gridContainer.appendChild(corner);
 
                 // Col Headers
                 for (let c = 1; c <= gridSize; c++) {
                     const header = document.createElement('div');
-                    header.className = 'flex items-center justify-center font-bold text-slate-300 bg-slate-800/90 rounded-lg border border-slate-700/60';
+                    header.className = 'flex items-center justify-center font-bold text-slate-300 bg-slate-800';
                     header.innerText = c;
                     gridContainer.appendChild(header);
                 }
             } else {
-                gridContainer.style.gridTemplateColumns = `repeat(${gridSize}, minmax(0, 1fr))`;
+                gridContainer.style.gridTemplateColumns = `repeat(${gridSize}, var(--cell, 28px))`;
+                gridContainer.style.gridTemplateRows = `repeat(${gridSize}, var(--cell, 28px))`;
             }
 
             // Group questions by row for rendering
@@ -805,7 +815,7 @@
             for (let r = 1; r <= gridSize; r++) {
                 if (showHeaders) {
                     const rowHeader = document.createElement('div');
-                    rowHeader.className = 'flex items-center justify-center font-bold text-slate-300 bg-slate-800/90 rounded-lg border border-slate-700/60';
+                    rowHeader.className = 'flex items-center justify-center font-bold text-slate-300 bg-slate-800';
                     rowHeader.innerText = r;
                     gridContainer.appendChild(rowHeader);
                 }
@@ -814,7 +824,7 @@
                     const cellData = matrix[r][c];
                     const cellDiv = document.createElement('div');
                     
-                    let baseClass = 'rounded-lg flex items-center justify-center transition-all duration-200 select-none cursor-default ';
+                    let baseClass = 'flex items-center justify-center transition-all duration-200 select-none cursor-default ';
 
                     if (cellData.filled) {
                         cellDiv.className = baseClass + 'cell-filled';
@@ -844,8 +854,8 @@
             if (!gridEl || !viewport || !gridEl.children.length) return;
 
             const cols = gridSize + (MODES[activeMode].table ? 1 : 0);
-            const gap = window.innerWidth >= 640 ? 6 : 3;
-            const chrome = window.innerWidth >= 640 ? 20 : 14;   // container padding + border
+            const gap = 0;      // tiles sit flush; their own border is the visual seam
+            const chrome = 4;   // container border only — no padding to leak through
 
             const availW = viewport.clientWidth  - chrome;
             const availH = viewport.clientHeight - chrome;
