@@ -420,16 +420,24 @@
     </footer>
 
     <script>
+        // ===================== הפרסים =====================
+        // להוסיף ממתק:  1. שים קובץ תמונה ב-  media/candies/
+        //               2. הוסף כאן שורה אחת בדיוק באותו מבנה
+        // אפשר כמה שרוצים — המשחק מגריל אחד מהרשימה לכל לוח.
+        // תמונה טובה: רוחב 800–1200px, המוצר גדול וממלא את הפריים
+        // (הלוח חושף אותה במשבצות קטנות, אז פרטים קטנים הולכים לאיבוד).
+        // name = מה שמוצג במסך הניצחון · icon = אמוג'י · img = הנתיב לקובץ
         const CANDIES = [
-            { name: "חפיסת שוקולד מפנקת", icon: "🍫", img: "https://images.unsplash.com/photo-1511381939415-e44015466834?auto=format&fit=crop&w=800&q=80" },
-            { name: "גלידה עשירה עם סוכריות", icon: "🍦", img: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=800&q=80" },
-            { name: "דונאט צבעוני ומצופה", icon: "🍩", img: "https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&w=800&q=80" },
-            { name: "סוכריות גומי צבעוניות", icon: "🍬", img: "https://images.unsplash.com/photo-1582058091505-f87a2e55a40f?auto=format&fit=crop&w=800&q=80" },
-            { name: "סוכרייה על מקל קסומה", icon: "🍭", img: "https://images.unsplash.com/photo-1575224300306-1b8da36134ec?auto=format&fit=crop&w=800&q=80" },
-            { name: "קאפקייק שוקולד וקצפת", icon: "🧁", img: "https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?auto=format&fit=crop&w=800&q=80" },
-            { name: "חבילת פופקורן מתוק", icon: "🍿", img: "https://images.unsplash.com/photo-1585647347483-22b66260dfff?auto=format&fit=crop&w=800&q=80" },
-            { name: "עוגיות שוקולד צ'יפס", icon: "🍪", img: "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?auto=format&fit=crop&w=800&q=80" }
+            { name: "חפיסת שוקולד מפנקת",   icon: "🍫", img: "media/candies/chocolate-bar.jpg" },
+            { name: "גלידה עשירה עם סוכריות", icon: "🍦", img: "media/candies/ice-cream.jpg" },
+            { name: "דונאט צבעוני ומצופה",   icon: "🍩", img: "media/candies/donut.jpg" },
+            { name: "סוכריות גומי צבעוניות",  icon: "🍬", img: "media/candies/gummy-candies.jpg" },
+            { name: "סוכרייה על מקל קסומה",   icon: "🍭", img: "media/candies/lollipop.jpg" },
+            { name: "קאפקייק שוקולד וקצפת",  icon: "🧁", img: "media/candies/cupcake.jpg" },
+            { name: "חבילת פופקורן מתוק",    icon: "🍿", img: "media/candies/popcorn.jpg" },
+            { name: "עוגיות שוקולד צ'יפס",   icon: "🍪", img: "media/candies/cookies.jpg" }
         ];
+        // ===================================================
 
         class SoundFX {
             constructor() { this.ctx = null; this.enabled = true; }
@@ -654,7 +662,14 @@
                     currentCandy = savedData.currentCandy ? JSON.parse(savedData.currentCandy) : null;
 
                     if (!Array.isArray(boardQuestions) || !boardQuestions.length) throw new Error('empty board');
-                    if (!currentCandy) currentCandy = CANDIES[Math.floor(Math.random() * CANDIES.length)];
+
+                    // The prize is stored inside the save, so an old save can still point at
+                    // a picture that is no longer one of the prizes — an image that used to be
+                    // hosted elsewhere, or one that was removed from CANDIES. Re-pick in that
+                    // case, otherwise the board reveals something that is no longer on offer.
+                    if (!currentCandy || !CANDIES.some(c => c.img === currentCandy.img)) {
+                        currentCandy = CANDIES[Math.floor(Math.random() * CANDIES.length)];
+                    }
 
                     filledCount = savedData.filledCount || 0;
                     streak = savedData.streak || 0;
@@ -705,9 +720,25 @@
             saveCurrentModeToMemory();
         }
 
-        function applyCandyImage() {
+        // The picture IS the reward, so a missing file must not leave a blank board.
+        // Check it loads before committing to it; otherwise pick a different prize.
+        function applyCandyImage(attempt = 0) {
             const bgElem = document.getElementById('secret-candy-bg');
-            if (bgElem && currentCandy) bgElem.style.backgroundImage = `url('${currentCandy.img}')`;
+            if (!bgElem || !currentCandy) return;
+
+            const probe = new Image();
+            probe.onload = () => {
+                bgElem.style.backgroundImage = `url('${currentCandy.img}')`;
+            };
+            probe.onerror = () => {
+                console.warn('תמונת ממתק חסרה:', currentCandy.img);
+                if (attempt >= CANDIES.length - 1) return;   // stop rather than loop forever
+                const others = CANDIES.filter(c => c.img !== currentCandy.img);
+                if (!others.length) return;
+                currentCandy = others[Math.floor(Math.random() * others.length)];
+                applyCandyImage(attempt + 1);
+            };
+            probe.src = currentCandy.img;
         }
 
         function startTimer() {
@@ -1137,7 +1168,10 @@
             if (timerInterval) clearInterval(timerInterval);
 
             if (currentCandy) {
-                document.getElementById('victory-candy-img').src = currentCandy.img;
+                const vImg = document.getElementById('victory-candy-img');
+                vImg.onerror = () => { vImg.style.display = 'none'; };   // the emoji still carries it
+                vImg.style.display = '';
+                vImg.src = currentCandy.img;
                 document.getElementById('victory-candy-icon').innerText = currentCandy.icon;
                 document.getElementById('victory-candy-name').innerText = currentCandy.name;
             }
