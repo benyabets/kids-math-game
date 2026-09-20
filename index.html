@@ -29,22 +29,7 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        /* Tabs styling */
-        .mode-tab {
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        .mode-tab.active {
-            background: linear-gradient(135deg, #6366f1, #a855f7);
-            color: white;
-            border-color: transparent;
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
-            font-weight: bold;
-        }
-        .mode-tab:not(.active):hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
+
 
         /* Cells styling */
         .grid-cell {
@@ -102,27 +87,26 @@
 </head>
 <body class="p-2 sm:p-4 md:p-6 flex flex-col min-h-screen justify-between">
 
+    <!-- ===== START SCREEN: pick the kind of exercises before playing ===== -->
+    <div id="start-screen" class="fixed inset-0 z-[60] bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 flex flex-col items-center justify-center p-4 overflow-y-auto">
+        <div class="w-full max-w-4xl my-auto">
+            <div class="text-center mb-4 sm:mb-8">
+                <div class="text-4xl sm:text-6xl mb-1 sm:mb-3 animate-bounce">🍭</div>
+                <h1 class="text-2xl sm:text-5xl font-black bg-gradient-to-r from-amber-300 via-indigo-200 to-emerald-300 bg-clip-text text-transparent mb-1 sm:mb-2 leading-tight">
+                    אתגר החשבון הגדול
+                </h1>
+                <p class="text-slate-400 text-xs sm:text-base">בחרו סוג תרגילים — וגלו איזה ממתק מסתתר מאחורי הלוח</p>
+            </div>
+
+            <div id="mode-cards" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                <!-- Cards generated from MODES via renderModeCards() -->
+            </div>
+        </div>
+    </div>
+
+
     <header class="max-w-6xl mx-auto w-full mb-4">
         
-        <!-- Mode Selector Tabs -->
-        <div class="flex flex-wrap justify-center gap-2 mb-3 bg-slate-900/50 p-1.5 rounded-2xl border border-slate-700/50 backdrop-blur-sm">
-            <button onclick="switchMode('mult')" id="tab-mult" class="mode-tab active px-4 py-2 rounded-xl border border-slate-600 text-slate-300 text-sm sm:text-base flex items-center gap-2">
-                <i class="fa-solid fa-xmark text-amber-400"></i> כפל
-            </button>
-            <button onclick="switchMode('add')" id="tab-add" class="mode-tab px-4 py-2 rounded-xl border border-slate-600 text-slate-300 text-sm sm:text-base flex items-center gap-2">
-                <i class="fa-solid fa-plus text-emerald-400"></i> חיבור
-            </button>
-            <button onclick="switchMode('sub')" id="tab-sub" class="mode-tab px-4 py-2 rounded-xl border border-slate-600 text-slate-300 text-sm sm:text-base flex items-center gap-2">
-                <i class="fa-solid fa-minus text-rose-400"></i> חיסור
-            </button>
-            <button onclick="switchMode('div')" id="tab-div" class="mode-tab px-4 py-2 rounded-xl border border-slate-600 text-slate-300 text-sm sm:text-base flex items-center gap-2">
-                <i class="fa-solid fa-divide text-sky-400"></i> חילוק
-            </button>
-            <button onclick="switchMode('mixed')" id="tab-mixed" class="mode-tab px-4 py-2 rounded-xl border border-slate-600 text-slate-300 text-sm sm:text-base flex items-center gap-2">
-                <i class="fa-solid fa-dice text-purple-400"></i> מעורב
-            </button>
-        </div>
-
         <div class="glass-card rounded-2xl p-4 flex flex-wrap justify-between items-center gap-4 shadow-xl border border-indigo-500/20">
             <div class="flex items-center gap-3">
                 <div id="header-icon-container" class="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-2xl text-white shadow-lg shadow-indigo-500/30">
@@ -163,6 +147,9 @@
 
             <!-- Action Buttons -->
             <div class="flex items-center gap-2">
+                <button onclick="openStartScreen()" class="p-2.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 transition" title="בחירת סוג תרגילים">
+                    <i class="fa-solid fa-table-cells-large text-lg"></i>
+                </button>
                 <button onclick="toggleSound()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="צלילים">
                     <i class="fa-solid fa-volume-high text-lg" id="icon-sound"></i>
                 </button>
@@ -400,6 +387,9 @@
                 <button onclick="restartGame()" class="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/30 transition">
                     <i class="fa-solid fa-rotate-right ml-1"></i> משחק חדש
                 </button>
+                <button onclick="backToMenuFromVictory()" class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl border border-slate-600 shadow-lg transition">
+                    <i class="fa-solid fa-table-cells-large ml-1"></i> אתגר אחר
+                </button>
             </div>
         </div>
     </div>
@@ -468,15 +458,20 @@
         const sound = new SoundFX();
 
         // Game Configuration & State
+        // table: true  = a real table board (row x col = the exercise), shows number headers, supports symmetry
+        // ops: [...]   = a shuffled pool board drawing from these operations
         const MODES = {
-            'mult': { name: 'לוח הכפל', icon: 'fa-xmark', op: '×', color: 'text-amber-400', theme: 'from-amber-400 to-orange-500' },
-            'add': { name: 'לוח החיבור', icon: 'fa-plus', op: '+', color: 'text-emerald-400', theme: 'from-emerald-400 to-teal-500' },
-            'sub': { name: 'אתגר החיסור', icon: 'fa-minus', op: '-', color: 'text-rose-400', theme: 'from-rose-400 to-red-500' },
-            'div': { name: 'אתגר החילוק', icon: 'fa-divide', op: '÷', color: 'text-sky-400', theme: 'from-sky-400 to-blue-500' },
-            'mixed': { name: 'אתגר מעורב', icon: 'fa-dice', op: '?', color: 'text-purple-400', theme: 'from-purple-400 to-fuchsia-500' }
+            'mult':    { name: 'לוח הכפל', short: 'כפל', icon: 'fa-xmark', op: '×', color: 'text-amber-400', theme: 'from-amber-400 to-orange-500', table: true },
+            'div':     { name: 'אתגר החילוק', short: 'חילוק', icon: 'fa-divide', op: '÷', color: 'text-sky-400', theme: 'from-sky-400 to-blue-500' },
+            'multdiv': { name: 'כפל וחילוק', short: 'כפל וחילוק', icon: 'fa-xmark', op: '×÷', color: 'text-orange-400', theme: 'from-orange-400 to-amber-500', ops: ['×', '÷'] },
+            'sub':     { name: 'אתגר החיסור', short: 'חיסור', icon: 'fa-minus', op: '-', color: 'text-rose-400', theme: 'from-rose-400 to-red-500' },
+            'add':     { name: 'לוח החיבור', short: 'חיבור', icon: 'fa-plus', op: '+', color: 'text-emerald-400', theme: 'from-emerald-400 to-teal-500', table: true },
+            'addsub':  { name: 'חיסור וחיבור', short: 'חיסור וחיבור', icon: 'fa-plus', op: '+−', color: 'text-teal-400', theme: 'from-teal-400 to-cyan-500', ops: ['+', '-'] },
+            'mixed':   { name: 'אתגר מעורב', short: 'מעורב', icon: 'fa-dice', op: '?', color: 'text-purple-400', theme: 'from-purple-400 to-fuchsia-500', ops: ['+', '-', '×', '÷'] }
         };
 
         let activeMode = 'mult';
+        let gameStarted = false; // false while the start screen is up
         let gridSize = 10;
         let boardQuestions = []; // Flat array of all questions for the grid
         let currentTarget = null; // Currently asked question
@@ -535,34 +530,83 @@
         window.onload = () => {
             window.addEventListener('keydown', handlePhysicalKeyboard);
             loadFromDevice();
-            loadMode(activeMode);
+            renderModeCards();   // start screen is visible by default; nothing loads until a mode is picked
         };
 
-        function switchMode(newMode) {
-            if (activeMode === newMode) return;
+        // ===== MODE MENU =====
+
+        function renderModeCards() {
+            const container = document.getElementById('mode-cards');
+            container.innerHTML = '';
+
+            Object.keys(MODES).forEach(key => {
+                const m = MODES[key];
+                const save = window.allSaves ? window.allSaves[key] : null;
+                const size = save ? (save.gridSize || 10) : 10;
+                const done = save ? (save.filledCount || 0) : 0;
+                const total = size * size;
+                const pct = total ? Math.round((done / total) * 100) : 0;
+
+                let badge;
+                if (done >= total && total > 0) {
+                    badge = '<span class="text-[10px] sm:text-xs font-bold text-emerald-300 bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded-full"><i class="fa-solid fa-trophy ml-1"></i>הושלם</span>';
+                } else if (done > 0) {
+                    badge = '<span class="text-[10px] sm:text-xs font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-full">' + pct + '% &middot; המשך</span>';
+                } else {
+                    badge = '<span class="text-[10px] sm:text-xs font-medium text-slate-400 bg-slate-800/80 border border-slate-700 px-2 py-0.5 rounded-full">התחל</span>';
+                }
+
+                // Combined modes show their two symbols as text; single modes show their icon
+                const glyph = (m.ops && m.ops.length > 1 && key !== 'mixed')
+                    ? '<span dir="ltr" class="font-black tracking-tight">' + m.op + '</span>'
+                    : '<i class="fa-solid ' + m.icon + '"></i>';
+
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.onclick = () => startMode(key);
+                card.className = 'glass-card rounded-2xl p-2 sm:p-5 border border-slate-700/60 hover:border-indigo-400 hover:-translate-y-0.5 active:scale-95 transition-all duration-200 flex flex-col items-center justify-center gap-2 min-h-[104px] sm:min-h-[160px] shadow-lg';
+                card.innerHTML =
+                    '<div class="w-11 h-11 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr ' + m.theme + ' flex items-center justify-center text-xl sm:text-3xl text-white shadow-lg">' + glyph + '</div>' +
+                    '<div class="font-black text-xs sm:text-base text-white leading-tight">' + m.short + '</div>' +
+                    badge;
+
+                container.appendChild(card);
+            });
+        }
+
+        function startMode(newMode) {
             sound.playPop();
-            
-            // Save current progress before switching
-            saveCurrentModeToMemory();
+
+            // Save whatever board we were on before leaving it
+            if (gameStarted && activeMode !== newMode) saveCurrentModeToMemory();
 
             activeMode = newMode;
-            
-            // UI Updates for Tabs
-            document.querySelectorAll('.mode-tab').forEach(tab => tab.classList.remove('active'));
-            document.getElementById(`tab-${newMode}`).classList.add('active');
+            gameStarted = true;
+            applyModeChrome(newMode);
 
-            // UI Updates for Header
-            document.getElementById('header-title').innerText = MODES[newMode].name;
-            const iconEl = document.getElementById('header-icon');
-            iconEl.className = `fa-solid ${MODES[newMode].icon}`;
-            document.getElementById('header-icon-container').className = `w-12 h-12 rounded-xl bg-gradient-to-tr ${MODES[newMode].theme} flex items-center justify-center text-2xl text-white shadow-lg`;
-            
-            // Settings UI
-            const symContainer = document.getElementById('symmetry-setting-container');
-            if (newMode === 'mult' || newMode === 'add') symContainer.style.display = 'flex';
-            else symContainer.style.display = 'none';
-
+            document.getElementById('start-screen').classList.add('hidden');
             loadMode(newMode);
+        }
+
+        function openStartScreen() {
+            sound.playPop();
+            if (gameStarted) saveCurrentModeToMemory();
+            if (timerInterval) clearInterval(timerInterval);   // don't run the clock while choosing
+            gameStarted = false;
+            renderModeCards();                                 // refresh the progress badges
+            document.getElementById('start-screen').classList.remove('hidden');
+        }
+
+        function applyModeChrome(mode) {
+            document.getElementById('header-title').innerText = MODES[mode].name;
+
+            const iconEl = document.getElementById('header-icon');
+            iconEl.className = `fa-solid ${MODES[mode].icon}`;
+            document.getElementById('header-icon-container').className =
+                `w-12 h-12 rounded-xl bg-gradient-to-tr ${MODES[mode].theme} flex items-center justify-center text-2xl text-white shadow-lg`;
+
+            // Symmetry only makes sense on a real table board
+            document.getElementById('symmetry-setting-container').style.display = MODES[mode].table ? 'flex' : 'none';
         }
 
         function loadMode(mode) {
@@ -648,16 +692,17 @@
                 }
             }
 
-            if (mode === 'mixed') {
+            // Pool modes (mixed / multdiv / addsub): random exercises drawn from this mode's operation set
+            if (MODES[mode].ops) {
                 questions = [];
-                const ops = ['+', '-', '×', '÷'];
+                const ops = MODES[mode].ops;
                 let idCounter = 0;
                 for (let r = 1; r <= size; r++) {
                     for (let c = 1; c <= size; c++) {
                         const op = ops[Math.floor(Math.random() * ops.length)];
                         const a = Math.floor(Math.random() * size) + 1;
                         const b = Math.floor(Math.random() * size) + 1;
-                        let q = { id: `mixed-${idCounter++}`, r: r, c: c, filled: false, op: op };
+                        let q = { id: `pool-${idCounter++}`, r: r, c: c, filled: false, op: op };
                         if(op === '+') { q.n1 = a; q.n2 = b; q.ans = a+b; }
                         else if(op === '×') { q.n1 = a; q.n2 = b; q.ans = a*b; }
                         else if(op === '-') { q.n1 = a+b; q.n2 = b; q.ans = a; }
@@ -667,8 +712,8 @@
                 }
             }
 
-            // Shuffle Sub, Div, and Mixed to prevent predictable grid patterns
-            if (['sub', 'div', 'mixed'].includes(mode)) {
+            // Shuffle every non-table mode to prevent predictable grid patterns
+            if (!MODES[mode].table) {
                 questions.sort(() => Math.random() - 0.5);
                 // Reassign r,c coordinates purely for placement in the grid visual
                 let idx = 0;
@@ -687,7 +732,7 @@
             const gridContainer = document.getElementById('math-grid');
             gridContainer.innerHTML = '';
             
-            const showHeaders = (activeMode === 'mult' || activeMode === 'add');
+            const showHeaders = !!MODES[activeMode].table;
             
             if (showHeaders) {
                 gridContainer.style.gridTemplateColumns = `repeat(${gridSize + 1}, minmax(0, 1fr))`;
@@ -796,6 +841,7 @@
         }
 
         function handlePhysicalKeyboard(e) {
+            if (!gameStarted) return;   // start screen is up
             if (!document.getElementById('settings-modal').classList.contains('hidden')) return;
             if (document.getElementById('victory-modal').classList.contains('hidden') === false) return;
 
@@ -823,7 +869,7 @@
                 filledCount++;
 
                 // Symmetry Logic (only for Mult and Add, where structure mathematically maps to r,c)
-                if (enableSymmetry && (activeMode === 'mult' || activeMode === 'add') && currentTarget.r !== currentTarget.c) {
+                if (enableSymmetry && MODES[activeMode].table && currentTarget.r !== currentTarget.c) {
                     const symQ = boardQuestions.find(q => q.r === currentTarget.c && q.c === currentTarget.r);
                     if (symQ && !symQ.filled) {
                         symQ.filled = true;
@@ -1031,6 +1077,11 @@
         function restartGame() {
             document.getElementById('victory-modal').classList.add('hidden');
             initGame(activeMode);
+        }
+
+        function backToMenuFromVictory() {
+            document.getElementById('victory-modal').classList.add('hidden');
+            openStartScreen();
         }
 
         function confirmRestart() {
