@@ -439,21 +439,43 @@
 
     <script>
         // ===================== הפרסים =====================
-        // להוסיף ממתק:  1. שים קובץ תמונה ב-  media/candies/
-        //               2. הוסף כאן שורה אחת בדיוק באותו מבנה
-        // אפשר כמה שרוצים — המשחק מגריל אחד מהרשימה לכל לוח.
-        // תמונה טובה: רוחב 800–1200px, המוצר גדול וממלא את הפריים
-        // (הלוח חושף אותה במשבצות קטנות, אז פרטים קטנים הולכים לאיבוד).
-        // name = מה שמוצג במסך הניצחון · icon = אמוג'י · img = הנתיב לקובץ
+        // הממתקים שהבנות בחרו. להוסיף עוד:
+        //   1. שים קובץ ב-  media/candies/   — שם באנגלית, אותיות קטנות, מקפים
+        //   2. הוסף כאן שורה אחת באותו מבנה
+        // שם הקובץ חייב להיות ASCII ובלי גרש: הוא נכנס לתוך url('...') ב-CSS,
+        // וגרש סוגר שם את המחרוזת. השם העברי חי בשדה name, שם הוא בטוח.
         const CANDIES = [
-            { name: "חפיסת שוקולד מפנקת",   icon: "🍫", img: "media/candies/chocolate-bar.jpg" },
-            { name: "גלידה עשירה עם סוכריות", icon: "🍦", img: "media/candies/ice-cream.jpg" },
-            { name: "דונאט צבעוני ומצופה",   icon: "🍩", img: "media/candies/donut.jpg" },
-            { name: "סוכריות גומי צבעוניות",  icon: "🍬", img: "media/candies/gummy-candies.jpg" },
-            { name: "סוכרייה על מקל קסומה",   icon: "🍭", img: "media/candies/lollipop.jpg" },
-            { name: "קאפקייק שוקולד וקצפת",  icon: "🧁", img: "media/candies/cupcake.jpg" },
-            { name: "חבילת פופקורן מתוק",    icon: "🍿", img: "media/candies/popcorn.jpg" },
-            { name: "עוגיות שוקולד צ'יפס",   icon: "🍪", img: "media/candies/cookies.jpg" }
+            { name: "במבה",                  icon: "🥜", img: "media/candies/bamba.png" },
+            { name: "במבה אדומה",            icon: "🍓", img: "media/candies/bamba-red.png" },
+            { name: "במבה במילוי חלווה",     icon: "🥜", img: "media/candies/bamba-halva.png" },
+            { name: "במבה נוגט",             icon: "🍫", img: "media/candies/bamba-nougat.png" },
+            { name: "ביסלי ברביקיו",         icon: "🍟", img: "media/candies/bisli-barbecue.png" },
+            { name: "אפרופו",                icon: "🥨", img: "media/candies/apropo.png" },
+            { name: "בייגלה שמיניות",        icon: "🥨", img: "media/candies/beigele-shminiyot.png" },
+            { name: "צ'יטוס",                icon: "🧀", img: "media/candies/cheetos.png" },
+            { name: "תפוצ'יפס",              icon: "🥔", img: "media/candies/tapuchips.png" },
+            { name: "פופקורן מתוק",          icon: "🍿", img: "media/candies/sweet-popcorn.png" },
+            { name: "קליק עוגי",             icon: "🍫", img: "media/candies/klik-ugi.png" },
+            { name: "כיף כף",                icon: "🍫", img: "media/candies/kif-kef.png" },
+            { name: "שוקולד לבן",            icon: "🤍", img: "media/candies/white-chocolate.png" },
+            { name: "מקלות עם שוקולד נוטלה", icon: "🥖", img: "media/candies/nutella-sticks.png" },
+            { name: "בפלות",                 icon: "🧇", img: "media/candies/waffles.png" },
+            { name: "טופי",                  icon: "🍬", img: "media/candies/toffee.png" },
+            { name: "דובונים",               icon: "🐻", img: "media/candies/gummy-bears.png" },
+            { name: "לבבות פוף",             icon: "💗", img: "media/candies/poof-hearts.png" },
+            { name: "סוכריות על מקל",        icon: "🍭", img: "media/candies/lollipops.png" },
+            { name: "קינדר בואנו",           icon: "🍫", img: "media/candies/kinder-bueno.png" },
+            { name: "קינדר אצבעות",          icon: "🍫", img: "media/candies/kinder-fingers.png" },
+            { name: "קינדר היפו",            icon: "🦛", img: "media/candies/kinder-happy-hippo.png" },
+            { name: "M&M's",                 icon: "🍬", img: "media/candies/m-and-ms.png" },
+            { name: "ריסס",                  icon: "🥜", img: "media/candies/reeses.png" },
+            { name: "סקיטלס",                icon: "🌈", img: "media/candies/skittles.png" },
+            { name: "סמארטיז",               icon: "🍬", img: "media/candies/smarties.png" },
+            { name: "מנטוס",                 icon: "🍬", img: "media/candies/mentos.png" },
+            { name: "מסטיק הובה בובה",       icon: "🫧", img: "media/candies/hubba-bubba.png" },
+            { name: "מרשמלו",                icon: "🍡", img: "media/candies/marshmallow.png" },
+            { name: "עוגיות שוקולד צ'יפס",   icon: "🍪", img: "media/candies/chocolate-chip-cookies.png" },
+            { name: "ערמונים",               icon: "🌰", img: "media/candies/chestnuts.png" }
         ];
         // ===================================================
 
