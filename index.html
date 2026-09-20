@@ -648,21 +648,35 @@
             const savedData = window.allSaves ? window.allSaves[mode] : null;
             
             if (savedData) {
-                // Resume saved state for this mode
-                gridSize = savedData.gridSize || 10;
-                boardQuestions = JSON.parse(savedData.boardQuestions);
-                filledCount = savedData.filledCount || 0;
-                streak = savedData.streak || 0;
-                maxStreak = savedData.maxStreak || 0;
-                score = savedData.score || 0;
-                secondsElapsed = savedData.secondsElapsed || 0;
-                currentCandy = JSON.parse(savedData.currentCandy);
-                
-                applyCandyImage();
-                startTimer();
-                renderGrid();
-                updateStatsUI();
-                pickNextQuestion();
+                try {
+                    gridSize = savedData.gridSize || 10;
+                    boardQuestions = JSON.parse(savedData.boardQuestions);
+                    currentCandy = savedData.currentCandy ? JSON.parse(savedData.currentCandy) : null;
+
+                    if (!Array.isArray(boardQuestions) || !boardQuestions.length) throw new Error('empty board');
+                    if (!currentCandy) currentCandy = CANDIES[Math.floor(Math.random() * CANDIES.length)];
+
+                    filledCount = savedData.filledCount || 0;
+                    streak = savedData.streak || 0;
+                    maxStreak = savedData.maxStreak || 0;
+                    score = savedData.score || 0;
+                    secondsElapsed = savedData.secondsElapsed || 0;
+
+                    // The board is the source of truth; a stored count can drift from it.
+                    filledCount = boardQuestions.filter(q => q.filled).length;
+
+                    applyCandyImage();
+                    startTimer();
+                    renderGrid();
+                    updateStatsUI();
+                    pickNextQuestion();
+                } catch (e) {
+                    // A damaged save must never leave a child on a dead screen.
+                    console.warn('שמירה פגומה — מתחילים לוח חדש:', e);
+                    delete window.allSaves[mode];
+                    saveToDevice();
+                    initGame(mode);
+                }
             } else {
                 // Initialize fresh state for this mode
                 initGame(mode);
@@ -915,7 +929,9 @@
         }
 
         function submitAnswer(userVal = null) {
-            if (!currentTarget) return;
+            // currentTarget is not cleared until pickNextQuestion runs 350ms later, so
+            // without the filled check an excited double-tap credits the same tile twice.
+            if (!currentTarget || currentTarget.filled) return;
 
             const expected = currentTarget.ans;
             const val = userVal !== null ? userVal : parseInt(currentInput);
@@ -1178,6 +1194,13 @@
         function closeSettingsModal() { sound.playPop(); document.getElementById('settings-modal').classList.add('hidden'); }
         
         function setGridSize(size) {
+            if (size === gridSize) return;
+
+            // Same destructive act as restart, so it asks the same way restart does.
+            if (filledCount > 0 && !confirm('שינוי גודל הלוח יתחיל את הלוח הנוכחי מחדש. להמשיך?')) {
+                return;
+            }
+
             sound.playPop();
             gridSize = size;
             document.getElementById('size-10-btn').className = size === 10 ? "py-2.5 rounded-xl border border-indigo-500 bg-indigo-600/30 text-white font-bold" : "py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white";
